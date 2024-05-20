@@ -1,0 +1,48 @@
+{
+    "name": "ImageNet_LT",
+    "arch": {
+        "type": "ResNet50Imagenet",
+        "args": {
+            "num_class": 1000,
+            "num_particle": 3
+        }
+    },
+    "data_loader": {
+        "type": "ImageNetLTDataLoader",
+        "args":{
+            "data_dir": "~/ImageNet_LT",
+            "batch_size": 256,
+            "num_workers": 12
+        }
+    },
+    "optimizer": {
+        "type": "SGD",
+        "args":{
+            "lr": 0.1,
+            "weight_decay": 2e-4,
+            "momentum": 0.9,
+            "nesterov": true
+        }
+    },
+    "loss": {
+        "type": "VariationalE",
+        "args": {
+            "reweight_epoch": 80,
+            "alpha": 50,
+            "tau": 20
+        }
+    },
+    "lr_scheduler": {
+        "type": "CustomLR",
+        "args": {
+            "warmup_epoch": 5,
+            "stage1": 60,
+            "stage2": 80,
+            "lr_decay": 0.1
+        }
+    },
+    "trainer": {
+        "epochs": 100,
+        "region": [333,333,334]
+    }
+}

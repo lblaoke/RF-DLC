@@ -1,0 +1,48 @@
+{
+    "name": "CIFAR10_LT",
+    "arch": {
+        "type": "ResNet32Cifar",
+        "args": {
+            "num_class": 10,
+            "num_particle": 3
+        }
+    },
+    "data_loader": {
+        "type": "ImbalanceCIFAR10DataLoader",
+        "args":{
+            "data_dir": "~",
+            "batch_size": 128,
+            "num_workers": 2
+        }
+    },
+    "optimizer": {
+        "type": "SGD",
+        "args":{
+            "lr": 0.1,
+            "weight_decay": 5e-4,
+            "momentum": 0.9,
+            "nesterov": true
+        }
+    },
+    "loss": {
+        "type": "VariationalE",
+        "args": {
+            "reweight_epoch": 160,
+            "alpha": 0.002,
+            "tau": 40
+        }
+    },
+    "lr_scheduler": {
+        "type": "CustomLR",
+        "args": {
+            "warmup_epoch": 5,
+            "stage1": 160,
+            "stage2": 180,
+            "lr_decay": 0.01
+        }
+    },
+    "trainer": {
+        "epochs": 200,
+        "region": [3,3,4]
+    }
+}

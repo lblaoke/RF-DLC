@@ -1,0 +1,48 @@
+{
+    "name": "iNaturalist",
+    "arch": {
+        "type": "ResNet50iNaturalist",
+        "args": {
+            "num_class": 8142,
+            "num_particle": 3
+        }
+    },
+    "data_loader": {
+        "type": "iNaturalistDataLoader",
+        "args":{
+            "data_dir": "/data/shared_data/iNaturalist18",
+            "batch_size": 512,
+            "num_workers": 24
+        }
+    },
+    "optimizer": {
+        "type": "SGD",
+        "args":{
+            "lr": 0.2,
+            "weight_decay": 2e-4,
+            "momentum": 0.9,
+            "nesterov": true
+        }
+    },
+    "loss": {
+        "type": "VariationalE",
+        "args": {
+            "reweight_epoch": 80,
+            "alpha": 100,
+            "tau": 20
+        }
+    },
+    "lr_scheduler": {
+        "type": "CustomLR",
+        "args": {
+            "warmup_epoch": 5,
+            "stage1": 60,
+            "stage2": 80,
+            "lr_decay": 0.1
+        }
+    },
+    "trainer": {
+        "epochs": 100,
+        "region": [2714,2714,2714]
+    }
+}
