@@ -15,19 +15,20 @@ def _ece_score(y_true,y_pred,bins=10):
         ece += ni*(acc-conf).abs()
     return float(ece)/len(y_true)
 
-def ACC(correct,target,region):
+def ACC(correct, target, region):
     acc = correct.sum().item()/len(target)
 
     # map each sample to its class region
-    region_map = torch.zeros(len(target),dtype=torch.uint8)
+    region_map = torch.zeros(len(target),dtype=torch.int64)
     region_map[region[0]:region[0]+region[1]] = 1
     region_map[region[0]+region[1]:sum(region)] = 2
 
     # count correct samples in each region
-    split_acc = [0,0,0]
+    split_acc, num_samples = [0, 0, 0], [0, 0, 0]
     for i in range(len(target)):
         split_acc[region_map[target[i].item()]] += correct[i].item()
-    split_acc = [split_acc[i]/(region[i]*len(target)/sum(region)) for i in range(3)]
+        num_samples[region_map[target[i].item()]] += 1
+    split_acc = [split_acc[i]/num_samples[i] for i in range(3)]
 
     print('ACC (%):')
     print(f'\tall  = {acc*100:.2f}')
@@ -35,12 +36,34 @@ def ACC(correct,target,region):
     print(f'\tmed  = {split_acc[1]*100:.2f}')
     print(f'\ttail = {split_acc[2]*100:.2f}')
 
-def AUCECE(correct,uncertainty):
-    confidence = 1-uncertainty
-    auc = roc_auc_score(correct,confidence)
-    ece = _ece_score(correct,confidence)
-    print(f'AUC (%): {auc*100:.2f}')
-    print(f'ECE (%): {ece*100:.2f}')
+def AUCECE(correct, uncertainty, target, region):
+    confidence = 1 - uncertainty
+    auc = roc_auc_score(correct, confidence)
+    ece = _ece_score(correct, confidence)
+
+    # map each sample to its class region
+    region_map = torch.zeros(len(target), dtype=torch.int64)
+    region_map[region[0] : region[0] + region[1]] = 1
+    region_map[region[0] + region[1] : sum(region)] = 2
+
+    # count correct samples in each region
+    split_auc, split_ece = [0, 0, 0], [0, 0, 0]
+    for i in range(3):
+        mask = (region_map[target] == i)
+        split_auc[i] = roc_auc_score(correct[mask], confidence[mask])
+        split_ece[i] = _ece_score(correct[mask], confidence[mask])
+
+    print('AUC (%):')
+    print(f'\tall  = {auc*100:.2f}')
+    print(f'\thead = {split_auc[0]*100:.2f}')
+    print(f'\tmed  = {split_auc[1]*100:.2f}')
+    print(f'\ttail = {split_auc[2]*100:.2f}')
+
+    print('ECE (%):')
+    print(f'\tall  = {ece*100:.2f}')
+    print(f'\thead = {split_ece[0]*100:.2f}')
+    print(f'\tmed  = {split_ece[1]*100:.2f}')
+    print(f'\ttail = {split_ece[2]*100:.2f}')
 
 def FHR(pred,target,num_class):
     # tail ratio: 25% 50% 75% avg

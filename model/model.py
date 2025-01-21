@@ -48,3 +48,19 @@ class ResNet50iNaturalist(BaseModel):
             num_particle      = num_particle    ,
             **kwargs
         )
+
+class ResNet32DermaMNIST(BaseModel):
+    def __init__(self,num_class,num_particle=1,**kwargs):
+        super().__init__(num_class,None)
+        self.backbone = resnet32.ResNet32(
+            resnet32.BasicBlock         ,
+            [5,5,5]                     ,
+            num_class    = num_class    ,
+            num_particle = num_particle ,
+            **kwargs
+        )
+
+if __name__ == "__main__":
+    from torchinfo import summary
+    model = ResNet32Cifar(100, num_particle=3)
+    summary(model, input_size=(128, 3, 32, 32))

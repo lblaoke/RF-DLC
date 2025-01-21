@@ -1,18 +1,17 @@
 {
-    "name": "CIFAR100_LT",
+    "name": "DermaMNIST_LT",
     "arch": {
-        "type": "ResNet32Cifar",
+        "type": "ResNet32DermaMNIST",
         "args": {
-            "num_class": 100,
+            "num_class": 7,
             "num_particle": 3
         }
     },
     "data_loader": {
-        "type": "ImbalanceCIFAR100DataLoader",
+        "type": "DermaMNIST_LT_loader",
         "args":{
-            "data_dir": "~",
             "batch_size": 128,
-            "num_workers": 2
+            "num_workers": 0
         }
     },
     "optimizer": {
@@ -28,7 +27,7 @@
         "type": "VariationalE",
         "args": {
             "reweight_epoch": 160,
-            "alpha": 0.3,
+            "alpha": 0.002,
             "tau": 40
         }
     },
@@ -43,6 +42,6 @@
     },
     "trainer": {
         "epochs": 200,
-        "region": [33,33,34]
+        "region": [2, 2, 3]
     }
 }

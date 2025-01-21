@@ -51,7 +51,7 @@ class VariationalE(nn.Module):
             self.applied_cls_weights = self.cls_weights
 
     def _modify_logits(self,x,y):
-        index = torch.zeros_like(x,dtype=torch.uint8,device=x.device)
+        index = torch.zeros_like(x,dtype=torch.bool,device=x.device)
         index.scatter_(1,y.data.view(-1,1),1)
         index_float = index.float()
         batch_m = torch.matmul(self.m_list[None,:],index_float.transpose(0,1))

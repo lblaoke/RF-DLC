@@ -24,14 +24,15 @@ class Trainer:
         self.num_class = self.val_targets.max().item()+1
 
     def run(self):
-        for epoch in range(1,self.config['trainer']['epochs']+1):
+        pbar = tqdm(range(1, self.config["trainer"]["epochs"] + 1))
+        for epoch in pbar:
             # train model
             total_loss = self._train_epoch(epoch)
+            pbar.set_postfix({"training_loss": sum(total_loss)/len(total_loss)})
 
             # test model
-            if epoch%20==0:
+            if epoch%40==0:
                 print(f'================ Epoch: {epoch:03d} ================')
-                print(f'Training loss =',sum(total_loss)/len(total_loss))
                 self._test_epoch(epoch)
 
             # update learning rate
@@ -43,7 +44,7 @@ class Trainer:
         self.criterion._hook_before_epoch(epoch)
 
         total_loss = []
-        for _,(data,target) in tqdm(enumerate(self.data_loader)):
+        for _,(data,target) in enumerate(self.data_loader):
             data,target = data.to(self.device),target.to(self.device)
             self.opt.zero_grad()
 
@@ -68,24 +69,39 @@ class Trainer:
 
     def _test_epoch(self,epoch):
         self.model.eval()
-        output = torch.empty(0,self.num_class,dtype=torch.float32)
-        uncertainty = torch.empty(0,dtype=torch.float32)
+        output = torch.empty(0, self.num_class, dtype=torch.float32)
+        uncertainty = torch.empty(0, dtype=torch.float32)
+        uncertainty_mcp = torch.empty(0, dtype=torch.float32)
+        uncertainty_evi = torch.empty(0, dtype=torch.float32)
 
         for _,(data,_) in enumerate(self.eval_data_loader):
             data = data.to(self.device)
 
             with torch.no_grad():
                 o = self.model(data)
-                u = -torch.sum(F.softmax(o,dim=1)*F.log_softmax(o,dim=1),dim=1)
+                u = -torch.sum(F.softmax(o, dim=-1) * F.log_softmax(o, dim=-1), dim=-1)
+                u_mcp = 1 - torch.max(F.softmax(o, dim=-1), dim=-1).values
+                u_evi = o.shape[-1] / (torch.sum(F.relu(o), dim=-1) + o.shape[-1])
 
-            output = torch.cat([output,o.detach().cpu()],dim=0)
-            uncertainty = torch.cat([uncertainty,u.detach().cpu()])
+            output = torch.cat([output, o.detach().cpu()], dim=0)
+            uncertainty = torch.cat([uncertainty, u.detach().cpu()])
+            uncertainty_mcp = torch.cat([uncertainty_mcp, u_mcp.detach().cpu()])
+            uncertainty_evi = torch.cat([uncertainty_evi, u_evi.detach().cpu()])
 
         pred = torch.argmax(output,dim=1)
         correct = (pred==self.val_targets)
-        ACC(correct,self.val_targets,region=self.config['trainer']['region'])
-        AUCECE(correct,uncertainty)
+        ACC(correct, self.val_targets, region=self.config['trainer']['region'])
+
+        print('\n Entropy:')
+        AUCECE(correct, uncertainty, self.val_targets, region=self.config['trainer']['region'])
+
+        print("\n MCP:")
+        AUCECE(correct, uncertainty_mcp, self.val_targets, region=self.config['trainer']['region'])
+
+        print("\n Evidential:")
+        AUCECE(correct, uncertainty_evi, self.val_targets, region=self.config['trainer']['region'])
+
         FHR(pred,self.val_targets,self.num_class)
 
-        CIAFR10_bird2plane(pred,self.val_targets)
-        CIAFR10_car2animal(pred,self.val_targets)
+        # CIAFR10_bird2plane(pred,self.val_targets)
+        # CIAFR10_car2animal(pred,self.val_targets)
